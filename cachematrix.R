@@ -1,15 +1,96 @@
 ## Put comments here that give an overall description of what your
 ## functions do
 
-## Write a short comment describing this function
-
+## create a cacheable matrix object
 makeCacheMatrix <- function(x = matrix()) {
-
+  i <- NULL
+  changed <- FALSE
+  ## set a matrix 
+  set <- function(y) {
+    x <<- y
+    i <<- NULL
+    changed <<- TRUE
+  }
+  # get a matrix 
+  get <- function() x
+  # set the inverse of a matrix 
+  setInverse <- function(inverse) {
+    i <<- inverse
+    changed <<- FALSE
+  }
+  # get the inverse of a matrix
+  getInverse <- function() i
+  # get boolean changed 
+  getChanged<- function() changed
+  list(set = set, get = get,
+       setInverse = setInverse,
+       getInverse = getInverse, getChanged = getChanged)
 }
 
 
 ## Write a short comment describing this function
+## compute the inverse of a
 
-cacheSolve <- function(x, ...) {
-        ## Return a matrix that is the inverse of 'x'
+## Return a matrix that is the inverse of 'x'
+cacheSolve <- function(x) { 
+  i <- x$getInverse()
+  # check if x has been changed in the mean time
+  if(!x$getChanged()) {
+    message("getting cached data")
+    return(i)
+  }
+  ## retrive the matrix
+  data <- x$get()
+  ## using R's solve function to compute the inverse of a matrix
+  i <- solve(data)
+  ## set the inverse to preserve it
+  x$setInverse(i)
+  i
+}
+
+##########################################################################
+## Test case to check cached inverse matrix
+##########################################################################
+##
+## PREPARE ##########################
+##provide a 3x3 matrix
+m <- matrix(c(1,2,3,6,0,4,7,8,9),3,3)
+#
+#create a "cache"
+cache <- makeCacheMatrix()
+#
+#set the matrix value of the cache
+cache$set(m)
+##
+## CROSSCHECK #######################
+##
+#crosscheck 1: same matrix in cache than m?
+mCache<-cache$get()
+if(!identical(m, mCache)) {
+  stop("Matrix is not the same")
+}
+#
+#crosscheck 2: at this point the cached inverse must be null
+iCache<-cache$getInverse()
+if(!is.null(iCache)) {
+  stop("Inverse must be null")
+}
+##
+## SOLVE ###########################
+##
+#now solve first time
+s1 <- cacheSolve(cache)
+#
+#solve second time
+s2 <- cacheSolve(cache)
+#
+#check: s1 and s2 should be identical
+if(!identical(s1,s2)) {
+  stop("Both inverse computations must be the same")
+}
+#
+#now cacheHits should be 1
+hits <- cache$getCacheHits()
+if(1!=hits){
+  stop("hits should be 1")
 }
